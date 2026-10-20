@@ -1,0 +1,58 @@
+EFF Android 0.5.0 experimental loader
+
+This source is distributed under AGPL-3.0; see LICENSE.
+
+EFF 1.8.1, https://github.com/ssice-a/EFF
+  AGPL-3.0. Source of the resource container format, checks, and resource
+  interface contracts used in the inspection and compatibility tools.
+  The vendored headers in third_party/eff/src implement the host-side Android
+  resource reconstruction. They retain the upstream file organization.
+
+Better-Endfield, https://github.com/Dr-hydra/Better-Endfield
+  AGPL-3.0. The injected Application attach / Unity nativeRender bootstrap
+  and Runtime.nativeLoad namespace selection follow its Android implementation.
+  The named-assembly fallback follows its Il2CppRuntime approach.
+  The checked multi-page code writer is adapted from its Android code patcher.
+
+Dobby, https://github.com/jmpews/Dobby
+  Apache-2.0; see third_party/dobby/LICENSE.
+  Pinned dev commit c82d31d5e43f4069edb7a74f4e0665f161673129.
+  Local changes: Android memory-read helper uses POSIX calls instead of the
+  undeclared OSMemory type. The static build replaces the POSIX code writer
+  with the project's checked page-permission implementation.
+
+libxposed API 102.0.0, https://github.com/libxposed/api
+  Compile-only dependency supplied at runtime by the user's compatible framework.
+
+Gradle wrapper
+  Copied unmodified from the reference Android source archive. Its scripts
+  retain their Apache-2.0 copyright and license notices.
+
+The APK does not include game assets, metadata dumps or the si Mod payloads.
+It imports separately supplied EFF format-2 author ZIP packages and compiles
+them on the phone. No Mod assets are included in this source distribution.
+Files under reports/device-backup and research/si-device-pack are local
+research inputs and must not be bundled in a public release.
+
+Android compiler portability changes
+  Windows pragma-link directives are guarded by _WIN32 in vendored EFF
+  headers. Compiler-only adapters under android/app/src/main/cpp/portable
+  implement the needed file, mapping, UTF-8 and SHA-256 primitives on POSIX.
+  Windows compiled-cache compression APIs explicitly report unsupported;
+  original author resource compilation does not use those APIs.
+
+Author conversion helpers
+  third_party/eff/tools/nativepack and src/eiem_author_core.cpp are from EFF
+  1.8.1 under AGPL-3.0. The native core DLL is built locally from source.
+  third_party/eff_blender/eiem_format.py is the pure Python format reader from
+  EFF_Blender, distributed under its included AGPL-3.0 license and notices.
+  No Blender executable, external author core DLL or proprietary source
+  snapshot is redistributed.
+  tools/convert_liino_eff.py is a local package-specific conversion experiment.
+  Its current output has unresolved material differences; the original EFMI
+  menu and HLSL overlay are not implemented.
+
+Third-party local modifications
+  eff/tools/nativepack and eff_blender/eiem_format.py are vendored unmodified.
+  eff/src/eiem_author_core.cpp is vendored unmodified.
+  See the EFF and Dobby entries above for compiler portability/code writer edits.

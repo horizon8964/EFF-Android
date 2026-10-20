@@ -1,0 +1,14 @@
+EFF Android 0.5.0 source distribution
+
+See README.md for build dependencies, commands, architecture and limitations.
+Run tools/build_android.ps1 with explicit Jdk, Sdk, Ndk, CmakeRoot and BuildTemp
+paths. It runs assembleDebug and lintDebug.
+
+Build the optional Windows author tools from a Visual Studio x64 Native Tools
+Command Prompt using tools/build_author_tools.cmd.
+
+Run python tools/package_source.py to create a GitHub upload ZIP containing
+source files, third-party dependencies, licenses and an integrity manifest.
+No game assets, Mods, signing keys, device logs or local.properties are included.
+
+Always force-stop Endfield BEFORE upgrading a module APK, then relaunch.

@@ -1,4 +1,3 @@
-[README.md](https://github.com/user-attachments/files/33721090/README.md)
 # EFF Android
 
 安卓 ARM64 端的实验性 EFF Mod 加载器，当前版本 **0.5.0**。通过兼容 libxposed API 102 的框架加载，在手机上导入 EFF 格式 2 作者资源 ZIP，使用游戏自身 VFS 编译并切换角色模型。
