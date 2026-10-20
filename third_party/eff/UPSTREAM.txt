@@ -1,0 +1,13 @@
+EFF 1.8.1
+https://github.com/ssice-a/EFF
+Imported from the EFF-1.8.1.zip supplied in this workspace.
+License: AGPL-3.0 (see LICENSE).
+
+Vendored components: native compiler headers in src/, the original
+eiem_author_core.cpp, tools/eff_author_sources.h, and tools/nativepack/*.py.
+The author core and Python author tools are unmodified upstream sources.
+
+Local header changes guard Windows pragma comment(lib) directives with
+_WIN32 so the same resource compiler can be linked with the Android toolchain.
+Android-specific portability adapters live outside this vendor tree, under
+android/app/src/main/cpp/portable/.

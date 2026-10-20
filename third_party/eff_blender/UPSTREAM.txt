@@ -1,0 +1,5 @@
+EFF_Blender
+Imported from the user-supplied EFF_Blender directory, dated 2026-10-17.
+Only the unmodified pure Python eiem_format.py reader is used here.
+Its LICENSE and THIRD_PARTY_NOTICES are preserved alongside it.
+No Blender binary, PIL vendor directory, game resources or author DLL is included.
