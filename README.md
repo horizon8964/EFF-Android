@@ -1,25 +1,29 @@
 # EFF Android
 
-安卓 ARM64 端的实验性 EFF Mod 加载器，当前版本 **0.5.0**。通过兼容 libxposed API 102 的框架加载，在手机上导入 EFF 格式 2 作者资源 ZIP，使用游戏自身 VFS 编译并切换角色模型。
+安卓 ARM64 端的实验性 EFF Mod 加载器，当前版本 **0.8.2**。通过兼容 libxposed API 102 的框架加载，在手机上导入 EFF 格式 2 作者资源 ZIP，使用游戏自身 VFS 编译并切换角色模型。
 
 本仓库包含 Android Java/C++ 源码、Gradle Wrapper、原生编译器、VFS 工具、离线验证工具，以及构建所需的第三方源码。无需本项目原作者的本地 `source-review` 目录。
 
 ## 当前功能与验证范围
 
-- 手机直接导入原始 EFF 格式 2 ZIP；最多选择四个 Mod 并合并编译，共用 CAB 只重建一次。
+- 手机直接导入原始 EFF 格式 2 ZIP；可选择多个 Mod 合并编译，不设固定数量上限，共用 CAB 只重建一次。
+- Compose + Miuix 界面，包含主页、模块、设置；支持页面弹簧切换、卡片反馈、控制区展开和横竖屏导航适配。
+- 主页根据游戏心跳显示工作状态；模块页导入、启用、应用和删除 Mod，删除已启用项会自动移出选择并请求更新游戏。
+- 设置支持跟随系统、浅色与深色主题；隐藏 UID、隐藏 HUD 仅为禁用的待开发入口，尚未实现隐藏功能。
 - 在已进入大世界时应用或恢复 Mod；已打开的角色界面需要关闭后重新打开。
 - 保存已选择的 Mod；提供作者已声明的形态键滑条。无形态键数据的 Mod 不会自动生成体型变化。
 - 已在国际服 1.6.4、ARM64 Android 16、libxposed API 102 环境验证 si，以及 si + Liino 两个角色同时加载；日志确认刷新两名角色。
-- 四个不同角色同屏、真实形态键滑条效果、长时间战斗与全部 LOD 尚未完成验证。
+- 设备临时数据测试覆盖五个 Mod 的勾选与提交，以及删除启用项、未启用项和控制值清理；未验证五个实际 Mod 同屏。
+- 支持作者声明的循环形态动画与原包外观切换；长时间战斗和全部 LOD 尚未完成验证。
 - **Liino 转换版的裙摆、腿部存在银白反光等材质偏差，尚未修复。** 模型加载成功不代表与 EFMI 外观一致。
 
 ## 手机使用
 
 1. 安装自行构建的 APK，在兼容框架中启用 `dev.eff.probe`，作用域选终末地。
 2. **更新插件 APK 前先强制停止终末地，再安装新版并重新启动游戏。** 直接覆盖安装后仅返回游戏可能继续使用旧进程中的模块。
-3. 在加载器中导入包含一个 `mod.ini`、`source-inputs.bin` 及其声明资源的 EFF ZIP。
-4. 勾选最多四个 Mod，点击“应用所选 MOD”，返回游戏等待编译。首次编译耗时更长。
-5. 点击“全部恢复原版”可恢复模型；已打开的角色界面需重新进入。
+3. 在“模块”页点击“导入”，选择包含一个 `mod.ini`、`source-inputs.bin` 及其声明资源的 EFF ZIP。
+4. 开启 Mod 开关，点击“应用”，返回游戏等待编译。首次编译耗时更长；点击 Mod 标题或“控制”可展开、收起作者提供的外观和动画选项。滑条区域保持稳定，按压动效仅作用于标题。
+5. 在“主页”点击“恢复原版”可恢复模型；已打开的角色界面需重新进入。模块卡片的垃圾桶按钮可在确认后删除该项。
 
 Mod、游戏 VFS、APK 资源包和解包后的游戏模型不随源码发布。EFMI `.buf` 包需要先转换；不能直接作为 EFF ZIP 导入。
 
@@ -36,7 +40,7 @@ powershell -ExecutionPolicy Bypass -File tools/build_android.ps1 `
   -CmakeRoot C:\Android\sdk\cmake\4.4.4 -BuildTemp C:\Temp\eff-build
 ```
 
-脚本执行 `assembleDebug` 和 `lintDebug`，生成 `dist/EFF-Android-0.5.0.apk`。也可在 Android Studio 打开 `android/`，安装指定 SDK/NDK/CMake 后构建。可用 `-PeffNdkPath=...` 指定独立 NDK，未指定时使用 SDK 管理的 NDK。
+脚本执行 `assembleDebug` 和 `lintDebug`，生成 `dist/EFF-Android-0.8.2.apk`。也可在 Android Studio 打开 `android/`，安装指定 SDK/NDK/CMake 后构建。可用 `-PeffNdkPath=...` 指定独立 NDK，未指定时使用 SDK 管理的 NDK。
 
 Debug 构建使用构建者自己的 Android debug key。源码不含本地签名密钥，因此自行构建的 APK 不能保证覆盖此前发布者签名的 APK；签名不一致时需先备份 Mod 库再卸载旧版。保留包名 `dev.eff.probe`，更换包名需要同步 provider、JNI 和框架配置。
 

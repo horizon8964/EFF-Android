@@ -11,6 +11,10 @@ import java.util.*;
 import java.util.zip.*;
 
 final class ModStore {
+    private static long lastHeartbeat;
+    private static int gamePid;
+    private static String gamePackage="";
+    static synchronized void heartbeat(String packageName,int pid){lastHeartbeat=android.os.SystemClock.elapsedRealtime();gamePid=pid;gamePackage=packageName;}
     static final String AUTHORITY="dev.eff.probe.mods";
     static final Uri URI=Uri.parse("content://"+AUTHORITY);
     static File root(Context c){return new File(c.getFilesDir(),"library");}
@@ -93,22 +97,39 @@ final class ModStore {
     }
     static synchronized JSONObject snapshot(Context c)throws Exception{
         android.content.SharedPreferences p=c.getSharedPreferences("control",0);
-        return new JSONObject().put("sequence",p.getLong("sequence",0)).put("selected_ids",selected(c)).put("draft_ids",new JSONArray(p.getString("draft_ids",selected(c).toString()))).put("shape_values",new JSONObject(p.getString("shape_values","{}"))).put("status",p.getString("status","等待游戏连接")).put("library",list(c));
+        boolean connected=gamePid>0&&!gamePackage.isEmpty()&&lastHeartbeat>0&&android.os.SystemClock.elapsedRealtime()-lastHeartbeat<12000;
+        return new JSONObject().put("sequence",p.getLong("sequence",0)).put("selected_ids",selected(c)).put("draft_ids",new JSONArray(p.getString("draft_ids",selected(c).toString()))).put("shape_values",new JSONObject(p.getString("shape_values","{}"))).put("status",p.getString("status","等待游戏连接")).put("library",list(c)).put("connected",connected).put("game_package",connected?gamePackage:"").put("game_pid",connected?gamePid:0);
     }
     static synchronized void stage(Context c,String id,boolean enabled)throws Exception{
         if(!id.matches("[0-9a-f]{64}")||!new File(root(c),id+"/entry.json").isFile())throw new IOException("Mod 不存在");
         android.content.SharedPreferences p=c.getSharedPreferences("control",0);JSONArray old=new JSONArray(p.getString("draft_ids",selected(c).toString()));java.util.TreeSet<String> ids=new java.util.TreeSet<>();for(int i=0;i<old.length();++i)ids.add(old.getString(i));
-        if(enabled)ids.add(id);else ids.remove(id);if(ids.size()>4)throw new IOException("最多同时启用 4 个 Mod");JSONArray next=new JSONArray();for(String item:ids)next.put(item);
+        if(enabled)ids.add(id);else ids.remove(id);JSONArray next=new JSONArray();for(String item:ids)next.put(item);
         if(!p.edit().putString("draft_ids",next.toString()).commit())throw new IOException("无法保存选择");
     }
     static synchronized void applyDraft(Context c)throws Exception{
         android.content.SharedPreferences p=c.getSharedPreferences("control",0);JSONArray ids=new JSONArray(p.getString("draft_ids",selected(c).toString()));
-        if(ids.length()>4)throw new IOException("最多同时启用 4 个 Mod");for(int i=0;i<ids.length();++i)if(!new File(root(c),ids.getString(i)+"/entry.json").isFile())throw new IOException("所选 Mod 不存在");
+        for(int i=0;i<ids.length();++i)if(!new File(root(c),ids.getString(i)+"/entry.json").isFile())throw new IOException("所选 Mod 不存在");
         if(!p.edit().putString("selected_ids",ids.toString()).putLong("sequence",p.getLong("sequence",0)+1).putString("status","等待游戏合并所选 Mod").commit())throw new IOException("无法保存请求");
     }
     static synchronized void clear(Context c)throws Exception{
         android.content.SharedPreferences p=c.getSharedPreferences("control",0);
         if(!p.edit().putString("selected_ids","[]").putString("draft_ids","[]").putString("selected","").putLong("sequence",p.getLong("sequence",0)+1).putString("status","等待恢复原版").commit())throw new IOException("无法保存恢复请求");
+    }
+    private static JSONArray without(JSONArray source,String id)throws Exception{
+        JSONArray result=new JSONArray();for(int i=0;i<source.length();++i)if(!id.equals(source.getString(i)))result.put(source.getString(i));return result;
+    }
+    static synchronized File delete(Context c,String id)throws Exception{
+        if(id==null||!id.matches("[0-9a-f]{64}"))throw new IOException("Mod 不存在");
+        File folder=child(root(c),id);if(!new File(folder,"entry.json").isFile())throw new IOException("Mod 不存在");
+        android.content.SharedPreferences p=c.getSharedPreferences("control",0);JSONArray old=selected(c),next=without(old,id);
+        JSONArray draft=without(new JSONArray(p.getString("draft_ids",old.toString())),id);
+        JSONObject values=new JSONObject(p.getString("shape_values","{}"));List<String> keys=new ArrayList<>();Iterator<String> iterator=values.keys();while(iterator.hasNext())keys.add(iterator.next());for(String key:keys)if(key.startsWith(id+":"))values.remove(key);
+        File trash=new File(c.getCacheDir(),"deleted-mod-"+UUID.randomUUID());if(!folder.renameTo(trash))throw new IOException("无法删除 Mod");
+        android.content.SharedPreferences.Editor edit=p.edit().putString("selected_ids",next.toString()).putString("draft_ids",draft.toString()).putString("shape_values",values.toString());
+        if(id.equals(p.getString("selected","")))edit.putString("selected","");
+        if(next.length()!=old.length())edit.putLong("sequence",p.getLong("sequence",0)+1).putString("status","等待游戏");
+        if(!edit.commit()){if(!trash.renameTo(folder))android.util.Log.e("EFF","Cannot restore deleted Mod after preference failure");throw new IOException("无法保存删除状态");}
+        return trash;
     }
     static synchronized void shape(Context c,JSONObject spec,double value)throws Exception{
         double min=spec.getDouble("min"),max=spec.getDouble("max");if(!Double.isFinite(value)||min>=max)throw new IOException("形态值无效");value=Math.max(min,Math.min(max,value));

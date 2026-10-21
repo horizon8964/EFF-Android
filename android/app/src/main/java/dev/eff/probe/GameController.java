@@ -11,6 +11,7 @@ final class GameController {
     static void start(Context game,File diagnostics){
         if(!running.compareAndSet(false,true))return;
         Thread worker=new Thread(()->run(game,diagnostics),"EFF-ModController");worker.setDaemon(true);worker.start();
+        Thread heartbeat=new Thread(()->{while(true){try{Bundle info=new Bundle();info.putInt("pid",android.os.Process.myPid());game.getContentResolver().call(ModStore.URI,"heartbeat",game.getPackageName(),info);}catch(Exception e){android.util.Log.w("EFF","Game heartbeat unavailable");}try{Thread.sleep(4000);}catch(InterruptedException e){Thread.currentThread().interrupt();return;}}},"EFF-Heartbeat");heartbeat.setDaemon(true);heartbeat.start();
     }
     private static void status(Context game,String value){try{game.getContentResolver().call(ModStore.URI,"status",value,null);}catch(Exception ignored){android.util.Log.w("EFF","Status provider unavailable");}}
     private static String vfsKey(Context game)throws Exception{
@@ -70,13 +71,13 @@ final class GameController {
                 StringBuilder command=new StringBuilder();java.util.Iterator<String> keys=values.keys();while(keys.hasNext()){String key=keys.next();command.append(key).append('\t').append(values.getDouble(key)).append('\n');}NativeBridge.controls(command.toString());lastShapes=shapes;
             }
             if(applied!=sequence){
-                processing=sequence;JSONArray selection=control.getJSONArray("selected_ids");if(selection.length()>4)throw new IOException("最多启用 4 个 Mod");
+                processing=sequence;JSONArray selection=control.getJSONArray("selected_ids");
                 if(selection.length()==0){NativeBridge.request("",sequence);applied=sequence;}
                 else{
                     java.util.TreeSet<String> ids=new java.util.TreeSet<>();for(int i=0;i<selection.length();++i)if(!ids.add(selection.getString(i)))throw new IOException("Mod 选择重复");
                     java.util.Map<String,JSONObject> entries=new java.util.HashMap<>();JSONArray library=control.getJSONArray("library");for(int i=0;i<library.length();++i){JSONObject entry=library.getJSONObject(i);entries.put(entry.getString("id"),entry);}
                     StringBuilder authors=new StringBuilder(),identity=new StringBuilder();for(String id:ids){JSONObject entry=entries.get(id);if(entry==null)throw new IOException("所选 Mod 不存在");if(authors.length()>0)authors.append('\n');authors.append(copyAuthor(game,entry).getPath());identity.append(id).append('\n');}
-                    String vfs=vfsKey(game);File output=new File(game.getFilesDir(),"eff-compiled/"+hashText(identity.toString())+"-v3-"+vfs);
+                    String vfs=vfsKey(game);File output=new File(game.getFilesDir(),"eff-compiled/"+hashText(identity.toString())+"-v6-"+vfs);
                     if(!new File(output,"hot.tsv").isFile()){
                         if(!output.isDirectory()&&!output.mkdirs())throw new IOException("无法创建编译目录");status(game,"正在合并编译 "+ids.size()+" 个 Mod");
                         AtomicBoolean compiling=new AtomicBoolean(true);Thread progress=new Thread(()->{while(compiling.get()){try{File file=new File(output,"progress.txt");if(file.isFile())status(game,"编译："+ModStore.read(file));Thread.sleep(1000);}catch(Exception ignored){break;}}},"EFF-CompileProgress");progress.setDaemon(true);progress.start();

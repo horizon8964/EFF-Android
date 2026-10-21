@@ -152,10 +152,12 @@ inline std::pair<Vector3, Vector3> PartBounds(const Type& type, const Value& sou
       Require(std::isfinite(weight) && weight > 0, "shape bounds positive frame weight required");
       std::set<size_t> visited;
       for (size_t v = (size_t)start; v < start + length; ++v) {
-        const auto& item = shapeVertices.children[v];
-        auto index = Integer(Child(type, item, "index"));
+        const bool packed=!shapeVertices.raw.empty();
+        auto index = packed?Le(shapeVertices.raw,v*40+36,4):Integer(Child(type, shapeVertices.children[v], "index"));
         Require(index < mesh.vertices && visited.insert((size_t)index).second, "shape bounds duplicate/out-of-range vertex");
-        auto delta = ReadVector(type, Child(type, item, "vertex"));
+        Vector3 delta{};
+        if(packed){Require(shapeVertices.raw.size()==shapeVertices.count*40,"packed shape bounds extent");for(size_t axis=0;axis<3;++axis){float value;memcpy(&value,shapeVertices.raw.data()+v*40+axis*4,4);Require(std::isfinite(value),"packed shape nonfinite position");delta[axis]=value;}}
+        else delta=ReadVector(type, Child(type, shapeVertices.children[v], "vertex"));
         for (size_t axis = 0; axis < 3; ++axis) {
           low[(size_t)index][axis] = std::min(low[(size_t)index][axis], delta[axis] * (100. / weight));
           high[(size_t)index][axis] = std::max(high[(size_t)index][axis], delta[axis] * (100. / weight));

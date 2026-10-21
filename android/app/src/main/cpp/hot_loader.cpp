@@ -1,4 +1,5 @@
 #include "hot_loader.h"
+#include "visibility_expression.h"
 #include <dobby.h>
 #include <android/log.h>
 #include <dlfcn.h>
@@ -74,7 +75,9 @@ struct Input{std::string path,hash;std::vector<size_t> deps;Ref request,bundle;}
 struct Asset{std::string path;size_t input=0;Lease source;Ref request,prefab;};
 struct Control{double minimum=0,maximum=1,value=0;};
 struct ShapeSpec{std::string marker,channel,key;int vertices=0,channels=0;};
-struct Generation{std::map<std::string,Control> controls;std::vector<ShapeSpec> shapes;std::string directory;std::vector<Input> inputs;std::set<size_t> closure;std::vector<Asset> assets;std::vector<Lease> donors;std::vector<std::string> donorPaths;std::map<void*,Ref> replacements;std::set<std::string> paths;int phase=0;long long sequence=0;};
+struct Animation{std::string speedKey;double duration=1,position=0;bool loop=true,autoplay=true;std::map<std::string,std::vector<float>> tracks;};
+struct VisibilitySpec{std::string marker;int vertices=0;std::shared_ptr<EiemExpression> expression;};
+struct Generation{EiemVariables visibilityDefaults;std::map<std::string,std::string> visibilityKeys;std::vector<VisibilitySpec> visibility;std::map<std::string,Animation> animations;std::map<std::string,bool> staticNames;std::map<std::string,Control> controls;std::vector<ShapeSpec> shapes;std::string directory;std::vector<Input> inputs;std::set<size_t> closure;std::vector<Asset> assets;std::vector<Lease> donors;std::vector<std::string> donorPaths;std::map<void*,Ref> replacements;std::set<std::string> paths;int phase=0;long long sequence=0;};
 std::shared_ptr<Generation> active,loading;
 std::map<std::string,std::shared_ptr<Generation>> retained;
 std::shared_ptr<const std::map<void*,Ref>> routes=std::make_shared<const std::map<void*,Ref>>();
@@ -98,7 +101,7 @@ using AddFn=void(*)(void*,void*,M);AddFn originalAdd=nullptr;
 void AddPart(void* self,void* part,M info){originalAdd(self,part,info);std::lock_guard<std::mutex> lock(modelMutex);models[self]=Hold(self,true);}
 std::vector<std::string> Split(const std::string& line){std::istringstream in(line);std::string part;std::vector<std::string> out;while(std::getline(in,part,'\t'))out.push_back(part);return out;}
 std::shared_ptr<Generation> ReadGraph(const std::string& directory,long long sequence){
- namespace fs=std::filesystem;auto g=std::make_shared<Generation>();g->directory=directory;g->sequence=sequence;std::ifstream in(directory+"/hot.tsv");std::string line;Check(bool(std::getline(in,line))&&line=="EFF_ANDROID_HOT\t1","热切换资源索引无效");
+ namespace fs=std::filesystem;auto g=std::make_shared<Generation>();g->directory=directory;g->sequence=sequence;std::ifstream in(directory+"/hot.tsv");std::string line;Check(bool(std::getline(in,line))&&(line=="EFF_ANDROID_HOT\t1"||line=="EFF_ANDROID_HOT\t2"||line=="EFF_ANDROID_HOT\t3"),"热切换资源索引无效");
  while(std::getline(in,line)){auto c=Split(line);if(c.empty())continue;
   if(c[0]=="input"){Check(c.size()>=4&&std::stoull(c[1])==g->inputs.size(),"resource input index differs");auto root=fs::canonical(directory);auto path=fs::weakly_canonical(root/c[2]);auto relative=path.lexically_relative(root);Check(!relative.empty()&&*relative.begin()!=".."&&!relative.is_absolute(),"resource path escapes generation");Input item;item.path=path.string();item.hash=c[3];if(c.size()>4){std::istringstream d(c[4]);std::string s;while(std::getline(d,s,','))if(!s.empty())item.deps.push_back(std::stoull(s));}g->inputs.push_back(std::move(item));}
   else if(c[0]=="closure"){Check(c.size()==2,"closure row invalid");g->closure.insert(std::stoull(c[1]));}
@@ -106,16 +109,27 @@ std::shared_ptr<Generation> ReadGraph(const std::string& directory,long long seq
   else if(c[0]=="donor"){Check(c.size()==2,"donor row invalid");g->donorPaths.push_back(c[1]);}
   else if(c[0]=="control"){Check(c.size()==5,"control row invalid");Control value{std::stod(c[2]),std::stod(c[3]),std::stod(c[4])};Check(std::isfinite(value.minimum)&&std::isfinite(value.maximum)&&std::isfinite(value.value)&&value.minimum<value.maximum&&value.value>=value.minimum&&value.value<=value.maximum,"control bounds invalid");Check(g->controls.emplace(c[1],value).second,"duplicate control key");}
   else if(c[0]=="shape"){Check(c.size()==6,"shape row invalid");g->shapes.push_back({c[1],c[2],c[3],std::stoi(c[4]),std::stoi(c[5])});}
+  else if(c[0]=="variable"){Check(c.size()==4&&EiemVariableName(c[1])&&!c[2].empty(),"visibility variable invalid");double value=0;Check(EiemNumber(c[3],&value)&&std::isfinite(value)&&g->visibilityDefaults.emplace(c[1],value).second,"visibility default invalid");g->visibilityKeys.emplace(c[1],c[2]);}
+  else if(c[0]=="visibility"){Check(c.size()==4&&c[3].size()<=65536,"visibility row invalid");std::string error;auto expression=EiemExpressionParser(c[3],error).Parse();int vertices=std::stoi(c[2]);Check(expression&&vertices>0,"visibility condition invalid: "+error);g->visibility.push_back({c[1],vertices,std::move(expression)});}
+  else if(c[0]=="animation"){Check(c.size()==6&&(c[4]=="0"||c[4]=="1")&&(c[5]=="0"||c[5]=="1"),"animation row invalid");Animation clip;clip.speedKey=c[2];clip.duration=std::stod(c[3]);clip.loop=c[4]=="1";clip.autoplay=c[5]=="1";Check(std::isfinite(clip.duration)&&clip.duration>=1e-6&&clip.duration<=86400&&g->animations.emplace(c[1],clip).second,"invalid animation duration/id");}
+  else if(c[0]=="track"){Check(c.size()>=5&&c.size()<=1000003&&g->animations.count(c[1]),"animation track invalid");std::vector<float> samples;for(size_t i=3;i<c.size();++i){float value=std::stof(c[i]);Check(std::isfinite(value),"animation sample nonfinite");samples.push_back(value);}Check(g->animations.at(c[1]).tracks.emplace(c[2],std::move(samples)).second,"duplicate animation track");}
+  else if(c[0]=="static"){Check(c.size()==3&&!c[1].empty()&&(c[2]=="0"||c[2]=="1"),"static row invalid");auto inserted=g->staticNames.emplace(c[1],c[2]=="1");if(!inserted.second)inserted.first->second=inserted.first->second&&c[2]=="1";}
   else throw std::runtime_error("unknown graph row");
  }
  for(const auto& shape:g->shapes)Check(g->controls.count(shape.key)&&shape.vertices>0&&shape.channels>0,"shape references invalid control");
+ for(const auto& spec:g->visibility){std::string error;Check(spec.expression->Validate(g->visibilityDefaults,error),"visibility variables absent: "+error);}
+ std::set<std::string> animated;for(const auto& row:g->animations){Check(g->controls.count(row.second.speedKey)&&!row.second.tracks.empty(),"animation speed/tracks absent");for(const auto& track:row.second.tracks){Check(g->controls.count(track.first)&&animated.insert(track.first).second,"animation binding absent/ambiguous");const auto& control=g->controls.at(track.first);for(float value:track.second)Check(value>=control.minimum-1e-6&&value<=control.maximum+1e-6,"animation sample outside bounds");}}
  Check(!g->assets.empty()&&!g->closure.empty(),"empty reload graph");for(auto i:g->closure)Check(i<g->inputs.size()&&fs::is_regular_file(g->inputs[i].path),"compiled bundle absent");for(auto& asset:g->assets)Check(g->closure.count(asset.input),"prefab root outside isolated closure");return g;
 }
 struct Owner{Ref model,root,entity,animation,data,weapons,perform,audio;std::string path;};
 std::vector<Owner> Owners(const std::set<std::string>& paths){
  std::vector<Ref> snapshot;{std::lock_guard<std::mutex> lock(modelMutex);for(auto it=models.begin();it!=models.end();){if(!it->second->Get())it=models.erase(it);else{snapshot.push_back(it->second);++it;}}}
  std::vector<Owner> out;
- for(auto& ref:snapshot){auto model=ref->Get();auto path=String(Call(modelPath,model));if(!paths.count(Normal(path)))continue;auto root=Call(modelRoot,model);if(!Alive(root))continue;auto entity=Call(modelEntity,model);if(!entity||Bool(entityReleased,entity))continue;
+ for(auto& ref:snapshot){auto model=ref->Get();auto path=String(Call(modelPath,model));if(!paths.count(Normal(path)))continue;
+  // Character teardown performs weapon/audio/perform operations. Interactive
+  // entities use their own lifecycle; route their next prefab instantiation.
+  if(Normal(path).find("/gameplay/actors/")==std::string::npos)continue;
+  auto root=Call(modelRoot,model);if(!Alive(root))continue;auto entity=Call(modelEntity,model);if(!entity||Bool(entityReleased,entity))continue;
   Owner o{Hold(model),Hold(root),Hold(entity),{},{},{},{},{},path};auto animation=Call(animatorCom,entity);if(animation){o.animation=Hold(animation);o.data=Hold(Call(animationData,animation));Check(o.data->Get(),"动画配置不可用");}auto weapon=Call(weaponCom,entity);if(weapon)o.weapons=Hold(weapon);auto instance=Call(gameInstance);auto world=instance?Field(instance,"m_world"):nullptr;auto perform=world?Field(world,"charInteractPerformManager"):nullptr;if(perform)o.perform=Hold(perform);
   if(entityTryComponent&&audioType){void* audio=nullptr;uint8_t quiet=0;void* args[]={audioType->Get(),&audio,&quiet};auto found=Call(entityTryComponent,entity,args);if(found&&*static_cast<uint8_t*>(a.unbox(found))&&audio)o.audio=Hold(audio);}
   out.push_back(std::move(o));
@@ -140,14 +154,16 @@ void Rebuild(std::vector<Owner>& owners){
   Log("REBUILT "+o.path+" old="+std::to_string(oldId)+" new="+std::to_string(Id(root)));
  }
 }
+void StaticInit();size_t StaticCommit(const std::shared_ptr<Generation>& next);void StaticFrame();
 void Commit(const std::shared_ptr<Generation>& next){
  std::set<std::string> paths;if(active)paths=active->paths;if(next)paths.insert(next->paths.begin(),next->paths.end());
  auto owners=Owners(paths);auto before=std::atomic_load(&routes);auto after=next?std::make_shared<const std::map<void*,Ref>>(next->replacements):std::make_shared<const std::map<void*,Ref>>();
  std::atomic_store(&routes,after);
- try{if(!owners.empty())Rebuild(owners);}catch(...){std::atomic_store(&routes,before);try{if(!owners.empty())Rebuild(owners);}catch(const std::exception& e){Log(std::string("ROLLBACK FAILED ")+e.what());}throw;}
+ size_t staticCount=0;
+ try{if(!owners.empty())Rebuild(owners);staticCount=StaticCommit(next);}catch(...){std::atomic_store(&routes,before);try{StaticCommit(active);if(!owners.empty())Rebuild(owners);}catch(const std::exception& e){Log(std::string("ROLLBACK FAILED ")+e.what());}throw;}
  active=next;appliedSequence.store(seenSequence);enabled.store(bool(next));if(next)retained[next->directory]=next;
  Log("COMMIT sequence="+std::to_string(seenSequence)+" owners="+std::to_string(owners.size())+" enabled="+(next?"1":"0"));
- Status(next?"Mod 已应用 · 已刷新 "+std::to_string(owners.size())+" 个角色；角色界面重新打开后生效":"已恢复原版 · 已刷新 "+std::to_string(owners.size())+" 个角色");
+ Status((next?"Mod 已应用":"已恢复原版")+std::string(" · 刷新角色 ")+std::to_string(owners.size())+"，静态物件 "+std::to_string(staticCount)+"；多部件或带骨骼的基建需重新进入场景验证");
 }
 void Step(Generation& g){
  struct Scope{bool old=pristine;Scope(){pristine=true;}~Scope(){pristine=old;}}scope;
@@ -172,7 +188,8 @@ int Int(M method,void* self){auto value=Call(method,self);Check(value,"managed i
 void ShapeFrame(){
  if(!active||active->shapes.empty()){shapeBindings.clear();shapeGeneration=active;return;}
  static unsigned tick=0;bool changed=shapeGeneration!=active;
- if(changed){shapeBindings.clear();shapeGeneration=active;}
+ static auto lastFrame=std::chrono::steady_clock::now();auto now=std::chrono::steady_clock::now();double elapsed=std::chrono::duration<double>(now-lastFrame).count();lastFrame=now;
+ if(changed){shapeBindings.clear();shapeGeneration=active;elapsed=0;for(auto& clip:active->animations)clip.second.position=0;}
  if(changed||++tick%60==0){
   void* args[]={skinType->Get()};auto array=Hold(Call(findSkinRenderers,nullptr,args));int count=Int(arrayLength,array->Get());Check(count>=0&&count<100000,"renderer enumeration invalid");
   shapeBindings.clear();
@@ -184,17 +201,27 @@ void ShapeFrame(){
    }
   }
  }
- auto values=std::atomic_load(&shapeValues);auto revision=shapeRevision.load();std::map<std::string,double> verified;
+ auto values=std::atomic_load(&shapeValues);auto revision=shapeRevision.load();std::map<std::string,double> verified,animated;
+ static uint64_t lastSeekRevision=~uint64_t(0);static std::map<std::string,double> previousSeekValues;
+ for(auto& row:active->animations){auto& clip=row.second;if(!clip.autoplay)continue;const auto& control=active->controls.at(clip.speedKey);auto speed=values->find(clip.speedKey);double rate=std::clamp(speed==values->end()?control.value:speed->second,control.minimum,control.maximum);
+  if(rate==0&&revision!=lastSeekRevision){for(const auto& track:clip.tracks){auto requested=values->find(track.first);if(requested==values->end()||track.second.size()!=2||track.second[0]!=0||track.second[1]!=1)continue;auto old=previousSeekValues.find(track.first);if(old!=previousSeekValues.end()&&old->second==requested->second)continue;clip.position=std::clamp(requested->second,0.,1.)*clip.duration;break;}}
+  clip.position+=std::min(elapsed,.25)*rate;if(clip.loop&&rate>0)clip.position=std::fmod(clip.position,clip.duration);else clip.position=std::min(clip.position,clip.duration);
+  for(const auto& track:clip.tracks){double sample=clip.position/clip.duration*(track.second.size()-1);size_t left=std::min(size_t(sample),track.second.size()-1),right=std::min(left+1,track.second.size()-1);animated[track.first]=track.second[left]+(track.second[right]-track.second[left])*(sample-left);}
+ }
+ if(lastSeekRevision!=revision)previousSeekValues=*values;lastSeekRevision=revision;
  for(auto it=shapeBindings.begin();it!=shapeBindings.end();){auto renderer=it->renderer->Get();auto mesh=it->mesh->Get();
   if(!Alive(renderer)||!Alive(mesh)||Call(skinMesh,renderer)!=mesh){it=shapeBindings.erase(it);continue;}
-  auto control=active->controls.at(it->key);auto request=values->find(it->key);double value=std::clamp(request==values->end()?control.value:request->second,control.minimum,control.maximum);float weight=float(value*100.0);int index=it->index;void* get[]={&index};auto old=Call(shapeGet,renderer,get);Check(old,"shape weight absent");
+  auto control=active->controls.at(it->key);auto request=values->find(it->key);double value=std::clamp(animated.count(it->key)?animated.at(it->key):(request==values->end()?control.value:request->second),control.minimum,control.maximum);float weight=float(value*100.0);int index=it->index;void* get[]={&index};auto old=Call(shapeGet,renderer,get);Check(old,"shape weight absent");
   if(std::abs(*static_cast<float*>(a.unbox(old))-weight)>0.0001f){void* args[]={&index,&weight};Call(shapeSet,renderer,args);}
   auto after=Call(shapeGet,renderer,get);Check(after&&std::abs(*static_cast<float*>(a.unbox(after))-weight)<0.0001f,"形态键权重回读失败");verified[it->key]=value;++it;
  }
- if(reportedRevision!=revision||reportedBindings!=shapeBindings.size()){
+ static auto lastReport=now;if(reportedRevision!=revision||reportedBindings!=shapeBindings.size()||(!animated.empty()&&std::chrono::duration<double>(now-lastReport).count()>=1)){
+  lastReport=now;
   reportedRevision=revision;reportedBindings=shapeBindings.size();std::ofstream f(diagnostics+"/shape-status.json.tmp");f<<"{\"pid\":"<<getpid()<<",\"revision\":"<<revision<<",\"bindings\":"<<shapeBindings.size()<<",\"values\":{";bool comma=false;for(const auto& pair:verified){if(comma)f<<',';comma=true;f<<'"'<<pair.first<<"\":"<<pair.second;}f<<"}}\n";f.close();std::rename((diagnostics+"/shape-status.json.tmp").c_str(),(diagnostics+"/shape-status.json").c_str());Log("SHAPES bindings="+std::to_string(shapeBindings.size())+" controls="+std::to_string(verified.size()));
  }
 }
+#include "static_visuals.inc"
+#include "visibility_runtime.inc"
 std::set<void*> hooked;
 void Hook(M method,void* detour,void** original,bool required=true){if(!method){Check(!required,"required hook absent");return;}void* address=nullptr;memcpy(&address,method,sizeof(address));if(hooked.count(address)){Check(!required,"duplicate hook entry");return;}Check(DobbyHook(address,detour,original)==0,"热切换 Hook 安装失败");hooked.insert(address);}
 }
@@ -234,6 +261,7 @@ void StartHotLoader(void* library,void* currentDomain,const std::string& root){d
  findSkinRenderers=Method(Class("UnityEngine","Resources"),"FindObjectsOfTypeAll","UnityEngine.Object[]",{"System.Type"},true);
  auto arrayClass=Class("System","Array");arrayLength=Method(arrayClass,"get_Length","System.Int32",{});arrayGet=Method(arrayClass,"GetValue","System.Object",{"System.Int32"});
  skinMesh=Method(skin,"get_sharedMesh","UnityEngine.Mesh",{});meshName=Method(object,"get_name","System.String",{});meshVertices=Method(mesh,"get_vertexCount","System.Int32",{});meshShapeCount=Method(mesh,"get_blendShapeCount","System.Int32",{});meshShapeIndex=Method(mesh,"GetBlendShapeIndex","System.Int32",{"System.String"});shapeGet=Method(skin,"GetBlendShapeWeight","System.Single",{"System.Int32"});shapeSet=Method(skin,"SetBlendShapeWeight","System.Void",{"System.Int32","System.Single"});
+ StaticInit();VisibilityInit();
  Hook(resourceGet,reinterpret_cast<void*>(GetHook),reinterpret_cast<void**>(&originalGet));
  auto add=Method(model,"AddPart","System.Void",{"Beyond.Gameplay.View.BaseModelViewPart"});Hook(add,reinterpret_cast<void*>(AddPart),reinterpret_cast<void**>(&originalAdd));
  auto native=[&](const char* name,void* detour,void** original){auto address=resolveIcall(name);Check(address,std::string("Unity 内部入口缺失: ")+name);Check(!hooked.count(address),"duplicate Unity internal hook");Check(DobbyHook(address,detour,original)==0,"Unity internal hook failed");hooked.insert(address);};
@@ -247,7 +275,8 @@ void StartHotLoader(void* library,void* currentDomain,const std::string& root){d
  }catch(const std::exception& e){for(void* address:hooked)DobbyDestroy(address);hooked.clear();Log(std::string("REJECTED ")+e.what());Status(std::string("热切换未启用：")+e.what());}}
 void AdvanceHotFrame(){
  if(!ready.load(std::memory_order_acquire))return;
- try{ShapeFrame();}catch(const std::exception& e){static std::string last;std::string message=e.what();if(last!=message){last=message;Log("SHAPE FAILED "+message);Status("形态键设置失败："+message);}}
+ try{StaticFrame();}catch(const std::exception& e){Log(std::string("STATIC FAILED ")+e.what());Status("基建外观刷新失败："+std::string(e.what()));}
+ try{ShapeFrame();VisibilityFrame();}catch(const std::exception& e){static std::string last;std::string message=e.what();if(last!=message){last=message;Log("SHAPE FAILED "+message);Status("形态键设置失败："+message);}}
  static unsigned frames=0;if(++frames%3)return;
  try{
   if(!Bool(initialized)||Bool(initing))return;

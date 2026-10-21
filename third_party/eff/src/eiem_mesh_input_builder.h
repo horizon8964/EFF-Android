@@ -91,6 +91,11 @@ inline Value ApplyMesh(const Type& type, const Value& source, const Resource& re
       ArrayValue(type,Child(type,result,"m_BonesAABB")).count==0,
       "unskinned Mesh contains native skinning data");
   auto shapes = Child(type, result, "m_Shapes");
+  const auto& shapeRecords=ArrayValue(type,Child(type,shapes,"vertices"));
+  if(!shapeRecords.raw.empty()){
+    Require(shapeRecords.count<=SIZE_MAX/40&&shapeRecords.raw.size()==shapeRecords.count*40,"packed shape record extent");
+    for(size_t v=0;v<shapeRecords.count;++v){Require(Le(shapeRecords.raw,v*40+36,4)<mesh.vertices,"shape index outside vertex buffer");for(size_t scalar=0;scalar<9;++scalar){float number;memcpy(&number,shapeRecords.raw.data()+v*40+scalar*4,4);Require(std::isfinite(number),"shape record nonfinite delta");}}
+  }
   auto& shapeChannels = ArrayValue(type, Child(type, shapes, "channels"));
   Require(shapeChannels.children.size() == mesh.shapes.size(), "Mesh shape binding count");
   for (size_t i = 0; i < mesh.shapes.size(); ++i) {

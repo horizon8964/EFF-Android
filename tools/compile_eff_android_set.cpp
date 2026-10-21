@@ -2,10 +2,10 @@
 #include <iostream>
 
 // Offline check of the same composition/native resource pipeline used on Android.
-// Arguments: game output (author-directory android-selection.bin){1..4}
+// Arguments: game output (author-directory android-selection.bin){1..N}
 int wmain(int argc,wchar_t** argv){try{
  using namespace EiemDirectory;
- Require(argc>=5&&argc<=11&&argc%2==1,"compile_eff_android_set game output (mod selection){1..4}");
+ Require(argc>=5&&argc%2==1,"compile_eff_android_set game output (mod selection){1..N}");
  const auto game=std::filesystem::canonical(argv[1]);
  const auto output=std::filesystem::absolute(argv[2]);
  std::vector<Package> authors;EiemStaticSources::Selection selected;

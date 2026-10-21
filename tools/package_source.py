@@ -34,11 +34,12 @@ def files():
 
 
 def main():
-    output = ROOT/'dist/EFF-Android-0.5.0-GitHub-source.zip'
+    version = re.search(r'versionName\s*=\s*"([^"]+)"', (ROOT/'android/app/build.gradle.kts').read_text(encoding='utf-8')).group(1)
+    output = ROOT/('dist/EFF-Android-'+version+'-GitHub-source.zip')
     output.parent.mkdir(exist_ok=True)
     paths, manifest = files(), {}
     suspicious = re.compile(rb'-----BEGIN (?:RSA |EC |OPENSSH )?PRIVATE KEY-----|gh[pousr]_[A-Za-z0-9]{30,}|github_pat_[A-Za-z0-9_]{30,}|AKIA[A-Z0-9]{16}')
-    prefix = 'EFF-Android-0.5.0/'
+    prefix = 'EFF-Android-'+version+'/'
     with zipfile.ZipFile(output, 'w', zipfile.ZIP_DEFLATED, compresslevel=9) as archive:
         for path in paths:
             relative = path.relative_to(ROOT).as_posix()

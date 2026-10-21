@@ -1,4 +1,4 @@
-EFF Android 0.5.0 source distribution
+EFF Android 0.8.2 source distribution
 
 See README.md for build dependencies, commands, architecture and limitations.
 Run tools/build_android.ps1 with explicit Jdk, Sdk, Ndk, CmakeRoot and BuildTemp

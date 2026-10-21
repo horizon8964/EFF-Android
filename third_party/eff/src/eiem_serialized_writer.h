@@ -24,6 +24,19 @@ struct Value {
   Bytes raw, padding;
   std::vector<Value> children;
 };
+// Android vertex animations contain millions of fixed-size shape records.
+// Keep this exact, schema-verified layout packed instead of allocating a tree
+// and ten small byte vectors for every record. Other structs stay generic.
+inline size_t PackedArrayStride(const Type& type,size_t element){
+ const auto& node=type.nodes.at(element);if(node.align)return 0;
+ if(auto primitive=Primitive(node.type))return primitive;
+ if((node.type!="MeshBlendShapeVertex"&&node.type!="BlendShapeVertex")||node.children.size()!=4)return 0;
+ const char* names[]={"vertex","normal","tangent","index"};
+ for(size_t i=0;i<4;++i){const auto& field=type.nodes.at(node.children[i]);if(field.align||field.name!=names[i])return 0;
+  if(i==3){if((field.type!="UInt32"&&field.type!="unsigned int")||!field.children.empty())return 0;}
+  else{if(field.children.size()!=3)return 0;for(size_t axis=0;axis<3;++axis){const auto& scalar=type.nodes.at(field.children[axis]);if(scalar.align||scalar.type!="float"||scalar.name!=std::string(1,"xyz"[axis])||!scalar.children.empty())return 0;}}
+ }return 40;
+}
 inline Value ReadValue(const Type& type, size_t index, Reader& reader,
                        size_t base, unsigned depth = 0) {
   Require(index < type.nodes.size() && depth < type.nodes.size(),
@@ -45,7 +58,7 @@ inline Value ReadValue(const Type& type, size_t index, Reader& reader,
                 Primitive(type.nodes[node.children[0]].type) == 4,
             "serialized array schema");
     value.count = reader.Count(reader.limit - reader.p);
-    size_t element = node.children[1], step = Primitive(type.nodes[element].type);
+    size_t element = node.children[1], step = PackedArrayStride(type,element);
     if (step && !type.nodes[element].align) {
       Require(value.count <= (reader.limit - reader.p) / step, "serialized packed array range");
       size_t start = reader.p;
@@ -94,7 +107,7 @@ inline void WriteValue(const Type& type, const Value& value, Bytes& output,
   } else if (node.type == "Array") {
     Require(node.children.size() == 2, "serialized output array schema");
     auto element = node.children[1];
-    auto step = Primitive(type.nodes[element].type);
+    auto step = PackedArrayStride(type,element);
     bool packed = step && !type.nodes[element].align;
     Require(value.count <= INT_MAX && (packed ? value.children.empty() &&
                 value.count <= SIZE_MAX / step && value.raw.size() == value.count * step

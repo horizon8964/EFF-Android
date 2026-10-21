@@ -1,12 +1,24 @@
-EFF Android 0.5.0 experimental loader
+EFF Android 0.8.2 experimental loader
 
 This source is distributed under AGPL-3.0; see LICENSE.
+
+Miuix 0.9.4, https://github.com/compose-miuix-ui/miuix
+  Apache-2.0. Compose UI components, press feedback, navigation, overscroll,
+  sliders, theme controller, and animated dialogs used in the manager.
+  The user-supplied KernelSU 3.3.1 manager is a visual design reference;
+  EFF manager screens and connection state are implemented independently.
+
+AndroidX Compose / Activity / Core, https://developer.android.com/jetpack/androidx
+  Apache-2.0. Android UI, activity lifecycle and edge-to-edge integration.
 
 EFF 1.8.1, https://github.com/ssice-a/EFF
   AGPL-3.0. Source of the resource container format, checks, and resource
   interface contracts used in the inspection and compatibility tools.
   The vendored headers in third_party/eff/src implement the host-side Android
   resource reconstruction. They retain the upstream file organization.
+  Local changes: schema-verified fixed-layout blend-shape vertices stay packed
+  during native reconstruction; bounds and finite/index validation support
+  this representation to reduce Android animation compilation memory use.
 
 Better-Endfield, https://github.com/Dr-hydra/Better-Endfield
   AGPL-3.0. The injected Application attach / Unity nativeRender bootstrap

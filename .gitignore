@@ -30,3 +30,5 @@ dist/
 .env.*
 .idea/
 .vscode/
+publish/
+.git-backups/

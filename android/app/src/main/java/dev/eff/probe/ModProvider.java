@@ -18,6 +18,11 @@ public final class ModProvider extends ContentProvider {
         check();try{
             Bundle out=new Bundle();
             if(method.equals("snapshot"))out.putString("json",ModStore.snapshot(getContext()).toString());
+            else if(method.equals("heartbeat")){
+                if(arg==null||(!arg.equals("com.gryphline.endfield.gp")&&!arg.equals("com.hypergryph.endfield"))||extras==null||extras.getInt("pid")<=0)throw new IllegalArgumentException("游戏连接无效");
+                String[] owners=getContext().getPackageManager().getPackagesForUid(Binder.getCallingUid());boolean owns=false;if(owners!=null)for(String owner:owners)if(arg.equals(owner))owns=true;
+                if(!owns)throw new SecurityException("游戏连接来源不符");ModStore.heartbeat(arg,extras.getInt("pid"));
+            }
             else if(method.equals("status"))getContext().getSharedPreferences("control",0).edit().putString("status",arg).apply();
             else if(method.equals("controls")){
                 if(arg==null||!arg.matches("[0-9a-f]{64}")||extras==null)throw new IllegalArgumentException("Mod 元数据无效");

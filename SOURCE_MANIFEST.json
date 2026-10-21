@@ -5,39 +5,43 @@
   },
   "BUILD.txt": {
     "bytes": 695,
-    "sha256": "25afc4adaab6115bede81a0b07b0432b8a8aa396f265f6a772c84368684d0edf"
+    "sha256": "3e34190c6e6aba6bb44c33da1720e31a90901cd5bd12514cfae759039143e478"
   },
   "LICENSE": {
     "bytes": 34527,
     "sha256": "580818d328146b4dc80e1495f78145bcd1f26e650e80decfac908ef4bb92b230"
   },
   "README.md": {
-    "bytes": 5572,
-    "sha256": "1beadfaa632456d99d2fcf98776db350cedaffdc72ba63b66f43faee5f28fc08"
+    "bytes": 6426,
+    "sha256": "bc237b8cf08e26a8d4a387d8d431a1e6a7e69c94243f57e338586a2dceaa29fc"
   },
   "THIRD_PARTY_NOTICES.txt": {
-    "bytes": 3142,
-    "sha256": "6c9146b60919cbdbe6a4d8b9fdcf8706a1b1fbc706c1d6ff56f3528d78180a78"
+    "bytes": 3892,
+    "sha256": "91359176d2b5215eeb30d62a2828ad361d276ac75a05e03de0c3c17836b1bb34"
   },
   "android/app/build.gradle.kts": {
-    "bytes": 1055,
-    "sha256": "303d3c1e43a492442069013ccd7ebd478b967c28785b6b688936ddf2a1823021"
+    "bytes": 1761,
+    "sha256": "d15a6371bf77720e98e9fa83530b3249a1af043e555579ba2c2aff66bfae6461"
+  },
+  "android/app/src/androidTest/java/dev/eff/probe/ModStoreChecks.java": {
+    "bytes": 7282,
+    "sha256": "bf91f4689cd2e7172c2b6e893c1c0fcddbccebbefe17c5f1b1ae6f0a9e26e347"
   },
   "android/app/src/main/AndroidManifest.xml": {
     "bytes": 946,
     "sha256": "ee778a478addfb87906d535646a2f1aa105c4606dd8d6d97d957677ac594bfdb"
   },
   "android/app/src/main/cpp/CMakeLists.txt": {
-    "bytes": 2103,
-    "sha256": "04ee2ffd5d9f3707664b921c129b9391b174b442bab2603f65a3fe57d4380be7"
+    "bytes": 2192,
+    "sha256": "7e17c3d4ac63b57f633fb0e0fc998c7f3989c2f81dcdf6c448be660ced9357ad"
   },
   "android/app/src/main/cpp/code_patch.cpp": {
     "bytes": 1986,
     "sha256": "d3dbb6189b656c8393d560783bf722e0c445378f422003d271ac999a0798dd90"
   },
   "android/app/src/main/cpp/compiler.cpp": {
-    "bytes": 6807,
-    "sha256": "98e75ee4dc4af956203781be01dc827f087650fbddad9a4774f38d939f830a9f"
+    "bytes": 10133,
+    "sha256": "4486f033dc194d1053f13e2c3c9c053f5ad02f2621120408ee6bd5a35b8fcb9d"
   },
   "android/app/src/main/cpp/compiler.h": {
     "bytes": 210,
@@ -48,8 +52,8 @@
     "sha256": "ffd1cd39bd0ac95bfc0958903c3d14de050b80656e60faef2604a9a84fee40fa"
   },
   "android/app/src/main/cpp/hot_loader.cpp": {
-    "bytes": 35912,
-    "sha256": "92aad1deed2b0587b18f552cca942ec438b0c9c12b79a3ab5a7c5080fc20f338"
+    "bytes": 41290,
+    "sha256": "e9294c02cca9bc29ce9f44493d16799faa7561604c98b7d1c72b2075f8bcd4ab"
   },
   "android/app/src/main/cpp/hot_loader.h": {
     "bytes": 258,
@@ -83,25 +87,45 @@
     "bytes": 17046,
     "sha256": "c8625c03352d0c6dcdd8c69ff721c4f0a6c3ce11fb5641ed0b422795e4132b6c"
   },
+  "android/app/src/main/cpp/static_visuals.inc": {
+    "bytes": 10708,
+    "sha256": "2fe03bebd95504c209e05ea6cb4c42a1f84bc4a14e7fb823b6033199441cec2e"
+  },
+  "android/app/src/main/cpp/visibility_expression.h": {
+    "bytes": 1568,
+    "sha256": "d7a0117aa411a4de05794197009b5b4d0db4e584fac85e3667f6516529e8f47f"
+  },
+  "android/app/src/main/cpp/visibility_runtime.inc": {
+    "bytes": 4222,
+    "sha256": "e977b5f8ad71aaf0461bf1423df324f228c945be7bce8e31f893a4d60d916abf"
+  },
   "android/app/src/main/java/dev/eff/probe/GameController.java": {
-    "bytes": 11064,
-    "sha256": "3041191d4129762a2819f3ede91cdb52e22b5c089f6904555492a5c4af2b11b5"
+    "bytes": 11443,
+    "sha256": "bcb7e79faf55fc386112203678d410764a7b5b6c805048788fe05520a301e936"
   },
   "android/app/src/main/java/dev/eff/probe/LoaderFiles.java": {
     "bytes": 3458,
     "sha256": "7782d15a39ca532fb4c963c8869229e01fed4bf2885d835146ea28c811161ea2"
   },
-  "android/app/src/main/java/dev/eff/probe/MainActivity.java": {
-    "bytes": 7591,
-    "sha256": "d750b77b1392e741f05955e0738152caab29b1324295d9b3cfbb1c94d625a876"
+  "android/app/src/main/java/dev/eff/probe/MainActivity.kt": {
+    "bytes": 4951,
+    "sha256": "4d206d42828be7e5ec4e2639888fd245aaa64b1ac79215e0c51b6905e738240d"
+  },
+  "android/app/src/main/java/dev/eff/probe/ManagerState.kt": {
+    "bytes": 2709,
+    "sha256": "7fba8f7a3f32b2c4411814a6bb63a841ff9d09e563d86677925e30b0211ba5d3"
+  },
+  "android/app/src/main/java/dev/eff/probe/ManagerUi.kt": {
+    "bytes": 22851,
+    "sha256": "45d03cebe73433a3ec56a98d06dbfc2277a22b126376a4c01ace3941c849c403"
   },
   "android/app/src/main/java/dev/eff/probe/ModProvider.java": {
-    "bytes": 3165,
-    "sha256": "a3fa9edfe6d00eaeb9601b9d3bb35e0a1436f2380d65313b8e01c7d902c5d0a2"
+    "bytes": 3768,
+    "sha256": "6df69b11e228e87216f13ecc6a3f58310ee663100f195ea912f70d713f2ed0da"
   },
   "android/app/src/main/java/dev/eff/probe/ModStore.java": {
-    "bytes": 10658,
-    "sha256": "5af11d8f2fdd2dd2f31219b2b4fee56947b7a8cb7de4fb60ae54a0d6efe774d4"
+    "bytes": 12833,
+    "sha256": "04a6fa2cf2b73069c07435afb12652b11ecd598599d149b34d20998177cdf8ab"
   },
   "android/app/src/main/java/dev/eff/probe/NativeBridge.java": {
     "bytes": 306,
@@ -128,8 +152,8 @@
     "sha256": "2f6b4a45f4551297c8c41d3bf59d1e26ef878d45bbb9f61cf3f6524a894ceade"
   },
   "android/build.gradle.kts": {
-    "bytes": 70,
-    "sha256": "62c55c6b701bf45c63988cfb83d176674897c2e7396023a88c8b5b6b3211e44e"
+    "bytes": 294,
+    "sha256": "baf446f796f1f2af364992cd65887fccdf56144930accda06eb003aadb3a4fdb"
   },
   "android/gradle.properties": {
     "bytes": 79,
@@ -1344,8 +1368,8 @@
     "sha256": "6643f4b7f4406a7c6c7d7d083748b6fdf57d328b607d499fde748eecdfa38841"
   },
   "third_party/eff/src/eiem_mesh_input_builder.h": {
-    "bytes": 13080,
-    "sha256": "241f008d2f67957f309b53f2bc0ac605ab0967f7ef236306f339eaa96fa7d9a0"
+    "bytes": 13623,
+    "sha256": "12a026bf1364628a73122172e4f48010f3b8549ed8dca080339786b460a62555"
   },
   "third_party/eff/src/eiem_mod_key_settings.h": {
     "bytes": 3786,
@@ -1440,8 +1464,8 @@
     "sha256": "04579aa06ffff1e8d8e5861f8ce51ddb546809b77dd3871937efa6dd3128d3f1"
   },
   "third_party/eff/src/eiem_renderer_input_builder.h": {
-    "bytes": 51752,
-    "sha256": "9b5687eada69afee66c43e71ee4aac50747efc13e12fc24fcb207124fbc77f5e"
+    "bytes": 52146,
+    "sha256": "a4c96672dc3e6643505ec12054a6f10bd4e562a4cf80291e2e7bb48039426f03"
   },
   "third_party/eff/src/eiem_resource_catalog_delta.h": {
     "bytes": 4250,
@@ -1472,8 +1496,8 @@
     "sha256": "8298adaaf98fd23d70f43a76e747d607aa504499de3f272210c951d03cf346bf"
   },
   "third_party/eff/src/eiem_serialized_writer.h": {
-    "bytes": 18789,
-    "sha256": "9f0166c0aea94763e6df36090b4629dc2296f389c212483e7b6468bb2080a16f"
+    "bytes": 19853,
+    "sha256": "9add17d40f0e03d59d2e7b4d090bb3a9cffc936c45f77b0b0753395467ee93d4"
   },
   "third_party/eff/src/eiem_shape_animation_player.h": {
     "bytes": 3233,
@@ -1647,13 +1671,21 @@
     "bytes": 734,
     "sha256": "46069f446743a4c364c81f05ddb17dda50833c1c055b5876830984cd81188218"
   },
+  "tools/check_packed_shapes.cpp": {
+    "bytes": 2152,
+    "sha256": "117f0fd8c72a3fa16b9a8b05a3e83259e80003c3aba688d25493c23a5e320602"
+  },
+  "tools/check_visibility_expression.cpp": {
+    "bytes": 1277,
+    "sha256": "091de968dd2b2f4a504ca96d44f3fb1d1177f8facf69c14676c24be4901e07e6"
+  },
   "tools/compare_android_sources.py": {
     "bytes": 4576,
     "sha256": "eccf4fa2abe7a7788a3ad89a7c2ccd45b596d28b66a0daa0ba2edac74fb189db"
   },
   "tools/compile_eff_android_set.cpp": {
-    "bytes": 1789,
-    "sha256": "4bc8042c0fd541137f9a880754d08d9f42e5619f786760ac0095304f62abccff"
+    "bytes": 1779,
+    "sha256": "3fd688f2216c26aa2015194e41d1a2fbbf3d23fb0da24100b1e312a1d1e0164e"
   },
   "tools/compile_si_android.cpp": {
     "bytes": 2790,
@@ -1662,6 +1694,10 @@
   "tools/complete_mobile_vfs.py": {
     "bytes": 5588,
     "sha256": "2e9e4594965a3647101a6ba6156bbaf2eb930a87a6aedb9968ba969fb500f6e0"
+  },
+  "tools/convert_endmin_dynamic.py": {
+    "bytes": 14185,
+    "sha256": "2016a7ef63d3094965a0f5debe0fcd1d3f58756846147174ea42af992b209817"
   },
   "tools/convert_liino_eff.py": {
     "bytes": 19375,
@@ -1675,6 +1711,10 @@
     "bytes": 6572,
     "sha256": "85046cd3412b9b746ead8b29c712f14b7e3528a80160e87d894dbd670fd344c4"
   },
+  "tools/make_static_eff_probe.py": {
+    "bytes": 3373,
+    "sha256": "1e4d46178f6d044bf825125b4806c6e015055a3ecd6a47e420cbee767420670f"
+  },
   "tools/mobile_vfs.py": {
     "bytes": 9121,
     "sha256": "c74050b5eb36098f7dd20cc4774b07199c2e9ad88dba16eb13c93d1943c2526a"
@@ -1684,8 +1724,12 @@
     "sha256": "d6eb6f35bc720c6bb88686887da2798c1e7ab99ab2820984de7e97c6726ddee7"
   },
   "tools/package_source.py": {
-    "bytes": 3480,
-    "sha256": "7366aa29c66f6c7cc9ff16e7383977a2e9ce268668a37807d665f62e1fb1cb04"
+    "bytes": 3626,
+    "sha256": "1ae1e90f9cbaa2616891d3a9afedc507f32d718f4ba84ad5c9033eb127342b28"
+  },
+  "tools/prepare_baseline_android.py": {
+    "bytes": 3565,
+    "sha256": "7d421844cec3d0e2884595ca6f3dd210f83207614e476a78ffc0defb8fc066ac"
   },
   "tools/prepare_eff_sources.cpp": {
     "bytes": 429,
@@ -1703,12 +1747,16 @@
     "bytes": 20,
     "sha256": "d6addac278e954c08915cb19fa4ff30a7facacf1d35650a96359ad1cd73fa242"
   },
+  "tools/retarget_tiger_robot.py": {
+    "bytes": 9713,
+    "sha256": "c1200ac787114e6d82fe31af31567a6d265785ba7237e1710af014eb0e823224"
+  },
   "tools/verify_android_contracts.py": {
     "bytes": 4696,
     "sha256": "5c919b9af7f1efeca579d54e5a31de5c0ce1c2312e5fd4101aa3e6ab4e2f2b5a"
   },
   "使用说明.txt": {
-    "bytes": 807,
-    "sha256": "0541b6745ec90b61f387f451f3409fddd0bed467a5b106d2bad804538b0c95da"
+    "bytes": 1158,
+    "sha256": "17021c85fbe20789fe0a2288ab467f7c24dad6edb6596fc4777d74e03439fda8"
   }
 }
